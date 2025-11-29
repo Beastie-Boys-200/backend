@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import get_object_or_404
 
 from .models import Conversation, Message
@@ -15,10 +15,10 @@ from .serializers import (
 from .permissions import IsConversationOwner
 
 class ConversationViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated, IsConversationOwner]
+    permission_classes = [AllowAny]
 
     def get_queryset(self):
-        queryset = Conversation.objects.filter(user=self.request.user).prefetch_related('messages')
+        queryset = Conversation.objects.all().prefetch_related('messages')
 
         # Фильтр по коллекции
         collection_name = self.request.query_params.get('collection_name')
@@ -42,7 +42,11 @@ class ConversationViewSet(viewsets.ModelViewSet):
         return ConversationDetailSerializer
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        # Allow creation even for unauthenticated users (user can be None)
+        if self.request.user.is_authenticated:
+            serializer.save(user=self.request.user)
+        else:
+            serializer.save(user=None)
 
     @action(detail=True, methods=['get'], url_path='messages')
     def messages(self, request, pk=None):

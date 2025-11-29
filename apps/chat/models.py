@@ -6,7 +6,9 @@ class Conversation(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='conversations'
+        related_name='conversations',
+        null=True,
+        blank=True
     )
     title = models.CharField(max_length=255, blank=True)
     collection_name = models.CharField(

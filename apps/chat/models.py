@@ -9,6 +9,13 @@ class Conversation(models.Model):
         related_name='conversations'
     )
     title = models.CharField(max_length=255, blank=True)
+    collection_name = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        default=None,
+        help_text="Collection/category name for grouping conversations"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_archived = models.BooleanField(default=False)
@@ -19,6 +26,7 @@ class Conversation(models.Model):
         indexes = [
             models.Index(fields=['user', '-updated_at']),
             models.Index(fields=['user', 'is_archived']),
+            models.Index(fields=['user', 'collection_name', '-updated_at']),
         ]
 
     def __str__(self):

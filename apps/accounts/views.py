@@ -38,7 +38,7 @@ class GoogleLogin(SocialLoginView):
 
     def get_response(self):
         serializer_class = self.get_response_serializer()
-        if getattr(settings, 'REST_USE_JWT', False):
+        if getattr(settings, 'REST_AUTH', {}).get('USE_JWT', False):
             from dj_rest_auth.jwt_auth import set_jwt_cookies
             from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -58,8 +58,8 @@ class GoogleLogin(SocialLoginView):
             )
             response = Response(serializer.data, status=status.HTTP_200_OK)
 
-            if getattr(settings, 'REST_AUTH', {}).get('USE_JWT', False):
-                set_jwt_cookies(response, access_token, refresh_token)
+            # Set httpOnly cookies
+            set_jwt_cookies(response, access_token, refresh_token)
 
             return response
         else:

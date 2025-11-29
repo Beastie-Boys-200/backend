@@ -173,9 +173,9 @@ REST_AUTH = {
     'USE_JWT': True,
     'JWT_AUTH_COOKIE': 'auth-token',
     'JWT_AUTH_REFRESH_COOKIE': 'refresh-token',
-    'JWT_AUTH_HTTPONLY': False,
+    'JWT_AUTH_HTTPONLY': True,  # Changed to True for security (XSS protection)
     'JWT_AUTH_SAMESITE': 'Lax',
-    'JWT_AUTH_SECURE': False,
+    'JWT_AUTH_SECURE': False,  # Set to True in production with HTTPS
     'USER_DETAILS_SERIALIZER': 'apps.accounts.serializers.UserSerializer',
     'REGISTER_SERIALIZER': 'apps.accounts.serializers.CustomRegisterSerializer',
     'LOGIN_SERIALIZER': 'apps.accounts.serializers.CustomLoginSerializer',

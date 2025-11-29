@@ -18,7 +18,19 @@ class ConversationViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsConversationOwner]
 
     def get_queryset(self):
-        return Conversation.objects.filter(user=self.request.user).prefetch_related('messages')
+        queryset = Conversation.objects.filter(user=self.request.user).prefetch_related('messages')
+
+        # Фильтр по коллекции
+        collection_name = self.request.query_params.get('collection_name')
+        if collection_name:
+            queryset = queryset.filter(collection_name=collection_name)
+
+        # Фильтр по архиву
+        is_archived = self.request.query_params.get('is_archived')
+        if is_archived is not None:
+            queryset = queryset.filter(is_archived=is_archived.lower() == 'true')
+
+        return queryset
 
     def get_serializer_class(self):
         if self.action == 'list':

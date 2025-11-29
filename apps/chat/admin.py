@@ -10,9 +10,9 @@ class MessageInline(admin.TabularInline):
 
 @admin.register(Conversation)
 class ConversationAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'title', 'message_count', 'created_at', 'updated_at', 'is_archived']
-    list_filter = ['is_archived', 'created_at', 'updated_at']
-    search_fields = ['title', 'user__email', 'user__first_name', 'user__last_name']
+    list_display = ['id', 'user', 'title', 'collection_name', 'message_count', 'created_at', 'updated_at', 'is_archived']
+    list_filter = ['collection_name', 'is_archived', 'created_at', 'updated_at']
+    search_fields = ['title', 'collection_name', 'user__email', 'user__first_name', 'user__last_name']
     readonly_fields = ['created_at', 'updated_at']
     inlines = [MessageInline]
     date_hierarchy = 'created_at'

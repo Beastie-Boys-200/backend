@@ -7,13 +7,15 @@ from dj_rest_auth.registration.views import SocialLoginView
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from .serializers import UpdateProfileSerializer, ChangePasswordSerializer, UserSerializer
 
 class GoogleLogin(SocialLoginView):
     adapter_class = GoogleOAuth2Adapter
     client_class = OAuth2Client
     callback_path = '/auth/google/callback'
+    permission_classes = [AllowAny]
+    authentication_classes = []
 
     def _get_allowed_frontend_urls(self):
         frontend_urls_str = os.environ.get('FRONTEND_URLS', settings.FRONTEND_URL)

@@ -150,12 +150,55 @@ CORS_ALLOWED_ORIGINS, CORS_ALLOWED_ORIGIN_REGEXES = get_cors_settings()
 CORS_ALLOW_CREDENTIALS = True
 
 # CSRF - allow cross-origin requests from frontend
-CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
+def get_csrf_trusted_origins():
+    origins = list(CORS_ALLOWED_ORIGINS)
+
+    # Add localhost and 127.0.0.1 with common ports
+    for host in ['localhost', '127.0.0.1', '0.0.0.0']:
+        for port in [3000, 8000, 80, 443]:
+            origins.append(f'http://{host}:{port}')
+            origins.append(f'https://{host}:{port}')
+
+    # Add all .hack.org subdomains with common ports
+    dev_domain = os.environ.get('DEV_DOMAIN', '.hack.org')
+    if dev_domain.startswith('.'):
+        dev_domain = dev_domain[1:]
+
+    # Get list of known subdomains from FRONTEND_URLS
+    frontend_urls = os.environ.get('FRONTEND_URLS', '').split(',')
+    for url in frontend_urls:
+        url = url.strip()
+        if url:
+            origins.append(url.replace(':3000', ':8000'))  # Add backend port variant
+            origins.append(url)  # Add frontend port
+
+    # Add IP range
+    dev_ip_range = os.environ.get('DEV_IP_RANGE', '10.10.10')
+    for i in range(1, 20):  # First 20 IPs
+        for port in [3000, 8000, 80]:
+            origins.append(f'http://{dev_ip_range}.{i}:{port}')
+
+    # Remove duplicates
+    return list(set(origins))
+
+CSRF_TRUSTED_ORIGINS = get_csrf_trusted_origins()
+
+# Session and CSRF Cookie settings for same-site (HTTP)
+# Note: SameSite=None requires HTTPS. For HTTP use 'Lax'
+SESSION_COOKIE_SAMESITE = 'Lax'  # Lax for HTTP (None requires HTTPS)
+SESSION_COOKIE_SECURE = False     # False for HTTP, True for HTTPS
+SESSION_COOKIE_HTTPONLY = True    # Keep httponly for security
+SESSION_COOKIE_DOMAIN = None      # None allows cookies to work per-domain
+CSRF_COOKIE_SAMESITE = 'Lax'      # Lax for HTTP (None requires HTTPS)
+CSRF_COOKIE_SECURE = False        # False for HTTP, True for HTTPS
+CSRF_COOKIE_HTTPONLY = False      # Must be False so JS can read it
+CSRF_COOKIE_DOMAIN = None         # None allows cookies to work per-domain
 
 # REST
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'dj_rest_auth.jwt_auth.JWTCookieAuthentication',  # Read JWT from cookies
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # Fallback to header
         'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
@@ -176,9 +219,9 @@ REST_AUTH = {
     'USE_JWT': True,
     'JWT_AUTH_COOKIE': 'auth-token',
     'JWT_AUTH_REFRESH_COOKIE': 'refresh-token',
-    'JWT_AUTH_HTTPONLY': True,  # Changed to True for security (XSS protection)
-    'JWT_AUTH_SAMESITE': None,  # None for cross-origin localhost development
-    'JWT_AUTH_SECURE': False,  # Set to True in production with HTTPS
+    'JWT_AUTH_HTTPONLY': False,  # False for development (allows cookies between different ports)
+    'JWT_AUTH_SAMESITE': 'Lax',  # Lax for HTTP development (None requires HTTPS)
+    'JWT_AUTH_SECURE': False,  # False for HTTP, set to True in production with HTTPS
     'USER_DETAILS_SERIALIZER': 'apps.accounts.serializers.UserSerializer',
     'REGISTER_SERIALIZER': 'apps.accounts.serializers.CustomRegisterSerializer',
     'LOGIN_SERIALIZER': 'apps.accounts.serializers.CustomLoginSerializer',

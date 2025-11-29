@@ -47,7 +47,30 @@ class ConversationViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='messages')
     def messages(self, request, pk=None):
         conversation = self.get_object()
-        messages = conversation.messages.all()
+
+        # Get limit parameter (n) from query params
+        limit = request.query_params.get('n')
+
+        if limit:
+            try:
+                limit = int(limit)
+                if limit <= 0:
+                    return Response(
+                        {'error': 'Parameter n must be a positive integer'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                # Get last n messages (ordered by timestamp descending, then reversed for chronological order)
+                messages = list(conversation.messages.order_by('-timestamp')[:limit])
+                messages.reverse()  # Return in chronological order (oldest first)
+            except ValueError:
+                return Response(
+                    {'error': 'Parameter n must be a valid integer'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            # Return all messages if n is not specified
+            messages = conversation.messages.all()
+
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
 

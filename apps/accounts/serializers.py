@@ -35,11 +35,21 @@ class CustomLoginSerializer(serializers.Serializer):
 
 class UserSerializer(serializers.ModelSerializer):
     name = serializers.CharField(read_only=True)
+    has_password = serializers.SerializerMethodField()
+    auth_provider = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'name', 'date_joined']
-        read_only_fields = ['id', 'date_joined']
+        fields = ['id', 'email', 'first_name', 'last_name', 'name', 'date_joined', 'has_password', 'auth_provider']
+        read_only_fields = ['id', 'date_joined', 'has_password', 'auth_provider']
+
+    def get_has_password(self, obj):
+        return obj.has_usable_password()
+
+    def get_auth_provider(self, obj):
+        if hasattr(obj, 'socialaccount_set') and obj.socialaccount_set.exists():
+            return obj.socialaccount_set.first().provider
+        return None
 
 class CustomRegisterSerializer(RegisterSerializer):
     username = None
@@ -106,6 +116,26 @@ class ChangePasswordSerializer(serializers.Serializer):
         if len(value) < 8:
             raise serializers.ValidationError("Password must be at least 8 characters long.")
         return value
+
+    def save(self):
+        user = self.context['request'].user
+        user.set_password(self.validated_data['new_password'])
+        user.save()
+        return user
+
+class SetPasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(required=True, write_only=True)
+
+    def validate_new_password(self, value):
+        if len(value) < 8:
+            raise serializers.ValidationError("Password must be at least 8 characters long.")
+        return value
+
+    def validate(self, attrs):
+        user = self.context['request'].user
+        if user.has_usable_password():
+            raise serializers.ValidationError("You already have a password. Use change password instead.")
+        return attrs
 
     def save(self):
         user = self.context['request'].user

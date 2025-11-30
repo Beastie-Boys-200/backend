@@ -82,6 +82,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='messages')
     def add_message(self, request, pk=None):
+        print(self.permission_classes)
         conversation = self.get_object()
         serializer = MessageCreateSerializer(data=request.data)
         if serializer.is_valid():

@@ -15,10 +15,13 @@ from .serializers import (
 from .permissions import IsConversationOwner
 
 class ConversationViewSet(viewsets.ModelViewSet):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = Conversation.objects.all().prefetch_related('messages')
+        # КРИТИЧЕСКИ ВАЖНО: фильтровать по текущему пользователю
+        queryset = Conversation.objects.filter(
+            user=self.request.user
+        ).prefetch_related('messages')
 
         # Фильтр по коллекции
         collection_name = self.request.query_params.get('collection_name')
@@ -42,11 +45,9 @@ class ConversationViewSet(viewsets.ModelViewSet):
         return ConversationDetailSerializer
 
     def perform_create(self, serializer):
-        # Allow creation even for unauthenticated users (user can be None)
-        if self.request.user.is_authenticated:
-            serializer.save(user=self.request.user)
-        else:
-            serializer.save(user=None)
+        # Всегда устанавливать текущего пользователя
+        # IsAuthenticated permission гарантирует, что user существует
+        serializer.save(user=self.request.user)
 
     @action(detail=True, methods=['get'], url_path='messages')
     def messages(self, request, pk=None):
@@ -75,8 +76,9 @@ class ConversationViewSet(viewsets.ModelViewSet):
             # Return all messages if n is not specified
             messages = conversation.messages.all()
 
+        # Always return serialized data, even if messages list is empty
         serializer = MessageSerializer(messages, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='messages')
     def add_message(self, request, pk=None):

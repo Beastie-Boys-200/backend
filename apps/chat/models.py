@@ -7,8 +7,8 @@ class Conversation(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='conversations',
-        null=True,
-        blank=True
+        null=False,
+        blank=False
     )
     title = models.CharField(max_length=255, blank=True)
     collection_name = models.CharField(

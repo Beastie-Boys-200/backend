@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 
 from .models import Conversation, Message
@@ -98,3 +99,45 @@ class MessageViewSet(viewsets.ReadOnlyModelViewSet):
         return Message.objects.filter(
             conversation__user=self.request.user
         ).select_related('conversation')
+
+
+class PublicMessagesView(APIView):
+    """
+    Public endpoint to get messages for a conversation.
+    GET /api/chat/public/conversations/{conversation_id}/messages/?n=10
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request, conversation_id):
+        # Get conversation by ID (ID is unique across all users)
+        conversation = get_object_or_404(
+            Conversation,
+            id=conversation_id
+        )
+
+        # Get limit parameter (n) from query params
+        limit = request.query_params.get('n')
+
+        if limit:
+            try:
+                limit = int(limit)
+                if limit <= 0:
+                    return Response(
+                        {'error': 'Parameter n must be a positive integer'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                # Get last n messages (ordered by timestamp descending, then reversed for chronological order)
+                messages = list(conversation.messages.order_by('-timestamp')[:limit])
+                messages.reverse()  # Return in chronological order (oldest first)
+            except ValueError:
+                return Response(
+                    {'error': 'Parameter n must be a valid integer'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        else:
+            # Return all messages if n is not specified
+            messages = conversation.messages.all()
+
+        # Serialize and return messages
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -5,7 +5,7 @@ from typing import Tuple, List
 
 ollama = Client(host="http://localhost:11434")
 
-with open('chats/chat1.json', 'r', encoding='utf-8') as f:
+with open('/home/oleg/proga/Projects/Hackathon2025/chats/chat1.json', 'r', encoding='utf-8') as f:
     data = json.load(f)['messages']
 
 MODELS = [
@@ -100,13 +100,13 @@ async def main():
     print("\n=== SUMMARY ===\n")
     print(chat_summary)
 
-    # 2) judge оценки
-    print(f"\nЗапускаем асинхронное тестирование {len(MODELS)} моделей...\n")
-    results = await test_all_models(chat_text, chat_summary)
+    # # 2) judge оценки
+    # print(f"\nЗапускаем асинхронное тестирование {len(MODELS)} моделей...\n")
+    # results = await test_all_models(chat_text, chat_summary)
 
-    print("\n=== РЕЗУЛЬТАТЫ ОЦЕНКИ ===\n")
-    for model, output in results:
-        print(f"\n--- {model} ---\n{output}\n")
+    # print("\n=== РЕЗУЛЬТАТЫ ОЦЕНКИ ===\n")
+    # for model, output in results:
+    #     print(f"\n--- {model} ---\n{output}\n")
 
 if __name__ == "__main__":
     asyncio.run(main())
